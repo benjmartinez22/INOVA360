@@ -832,24 +832,13 @@
       else alert('Ingresa la URL y el Anon Key para conectar.');
     }
 
-    var _camInterval = null;
     function aplicarCamStream(baseUrl) {
-      var snapUrl = baseUrl.replace(/\/$/, '').replace('/stream', '') + '/snapshot';
+      var streamUrl = baseUrl.replace(/\/$/, '').replace('/stream', '') + '/stream';
       var img = document.getElementById('cam-img');
       var ph  = document.getElementById('cam-placeholder');
-      if (_camInterval) clearInterval(_camInterval);
-      function fetchSnap() {
-        var t = new Date().getTime();
-        var i = new Image();
-        i.onload = function() {
-          img.src = i.src;
-          img.style.display = 'block';
-          if (ph) ph.style.display = 'none';
-        };
-        i.src = snapUrl + '?t=' + t;
-      }
-      fetchSnap();
-      _camInterval = setInterval(fetchSnap, 500);
+      img.src = streamUrl;
+      img.style.display = 'block';
+      if (ph) ph.style.display = 'none';
     }
 
     function sbVerificar() {
