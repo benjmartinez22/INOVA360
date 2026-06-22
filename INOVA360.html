@@ -810,6 +810,8 @@
 
     /* ── Supabase ── */
     var _sb = null;
+    var SB_URL = 'https://cdzenbwvqrxdtaztbllc.supabase.co';
+    var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkemVuYnd2cXJ4ZHRhenRibGxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzg1MzgsImV4cCI6MjA5NzY1NDUzOH0.efLzdQMubDbGqmI38E4pe3hbmU-cW86yW9enhLU_kFM';
 
     function sbGuardar() {
       var url = document.getElementById('sb-url').value.trim();
@@ -891,17 +893,19 @@
       });
     }
 
-    /* Auto-conectar si hay credenciales guardadas */
+    /* Auto-conectar siempre al cargar la página */
+    sbConectar(SB_URL, SB_KEY);
+
+    /* También cargar desde localStorage si el usuario guardó otras credenciales */
     (function() {
-      var url = localStorage.getItem('sb_url');
-      var key = localStorage.getItem('sb_anon');
+      var url = localStorage.getItem('sb_url') || SB_URL;
+      var key = localStorage.getItem('sb_anon') || SB_KEY;
       var urlEl = document.getElementById('sb-url');
       var keyEl = document.getElementById('sb-anon');
       var svcEl = document.getElementById('sb-service');
-      if (urlEl && url) urlEl.value = url;
-      if (keyEl && key) keyEl.value = key;
+      if (urlEl) urlEl.value = url;
+      if (keyEl) keyEl.value = key;
       if (svcEl) { var s = localStorage.getItem('sb_service'); if (s) svcEl.value = s; }
-      if (url && key) sbConectar(url, key);
     })();
   </script>
 </body>
