@@ -404,7 +404,7 @@
       <div class="grid-2">
         <div class="card">
           <div class="card-title">C&#xE1;mara</div>
-          <div class="camera-box"><img id="cam-img" src="" alt="" /><div class="camera-placeholder" id="cam-placeholder"><div class="camera-icon">&#128247;</div><div class="camera-txt">Sin imagen — esperando conexi&#xF3;n</div></div></div>
+          <div class="camera-box"><img id="cam-img" src="" alt="" /><div class="camera-placeholder" id="cam-placeholder"><div class="camera-icon">&#128247;</div><div class="camera-txt">Sin imagen — configura la URL de c&#xE1;mara en Ajustes</div></div></div>
           <div class="last-det-row"><span class="last-det-label">&#xDA;ltima detecci&#xF3;n:</span><span id="last-det" class="det-badge det-espera">—</span></div>
         </div>
         <div class="card">
@@ -452,6 +452,12 @@
     <!-- ══ AJUSTES ══ -->
     <div id="view-ajustes" class="view">
       <div class="page-header"><div class="page-title">Ajustes</div></div>
+      <div class="settings-section">
+        <div class="section-head"><div class="section-icon" style="background:rgba(255,255,255,.08)">&#128247;</div><div><div class="section-title">C&#xE1;mara en vivo</div><div class="section-sub">URL del stream MJPEG desde la Raspberry Pi (v&#xED;a Cloudflare Tunnel)</div></div></div>
+        <div class="settings-grid">
+          <div class="fg full"><label>URL del stream</label><input id="cam-stream-url" type="text" placeholder="https://abc123.trycloudflare.com" /></div>
+        </div>
+      </div>
       <div class="settings-section">
         <div class="section-head"><div class="section-icon" style="background:rgba(62,207,142,.1)">&#x26A1;</div><div><div class="section-title">Supabase</div><div class="section-sub">Autenticaci&#xF3;n y base de datos principal</div></div></div>
         <div class="settings-grid">
@@ -817,11 +823,22 @@
       var url = document.getElementById('sb-url').value.trim();
       var key = document.getElementById('sb-anon').value.trim();
       var svc = document.getElementById('sb-service').value.trim();
+      var camUrl = document.getElementById('cam-stream-url').value.trim();
       if (url) localStorage.setItem('sb_url', url);
       if (key) localStorage.setItem('sb_anon', key);
       if (svc) localStorage.setItem('sb_service', svc);
+      if (camUrl) { localStorage.setItem('cam_stream_url', camUrl); aplicarCamStream(camUrl); }
       if (url && key) sbConectar(url, key);
       else alert('Ingresa la URL y el Anon Key para conectar.');
+    }
+
+    function aplicarCamStream(baseUrl) {
+      var streamUrl = baseUrl.replace(/\/$/, '') + '/stream';
+      var img = document.getElementById('cam-img');
+      var ph  = document.getElementById('cam-placeholder');
+      img.src = streamUrl;
+      img.style.display = 'block';
+      if (ph) ph.style.display = 'none';
     }
 
     function sbVerificar() {
@@ -906,6 +923,10 @@
       if (urlEl) urlEl.value = url;
       if (keyEl) keyEl.value = key;
       if (svcEl) { var s = localStorage.getItem('sb_service'); if (s) svcEl.value = s; }
+      var camUrl = localStorage.getItem('cam_stream_url');
+      var camEl = document.getElementById('cam-stream-url');
+      if (camEl && camUrl) camEl.value = camUrl;
+      if (camUrl) aplicarCamStream(camUrl);
     })();
   </script>
 </body>
