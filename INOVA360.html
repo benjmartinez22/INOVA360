@@ -897,6 +897,7 @@
     }
 
     function sbMapManzana(d) {
+      if (d.cam_url) aplicarCamStream(d.cam_url.replace('/stream', ''));
       updateManzana({
         activa:      d.activa,
         rpm:         d.rpm,
