@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INOVA360°</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --accent:    #4caf50;
+      --success:   #3fb950;
+      --danger:    #f85149;
+      --gold:      #d2993a;
+      --gold-light:#e3b84a;
+      --card:      #0d0d0d;
+      --surface:   #111;
+      --border:    rgba(255,255,255,.08);
+      --text:      #e6edf3;
+      --text2:     rgba(255,255,255,.45);
+      --muted:     rgba(255,255,255,.25);
+      --radius:    8px;
+      --radius-lg: 14px;
+      --nav-w:     220px;
+    }
+    body { background:#000; color:var(--text); font-family:'Inter','Segoe UI',sans-serif; font-size:14px; min-height:100vh; display:flex; }
+
+    /* ── MOBILE HEADER ── */
+    .mobile-header { display:none; position:fixed; top:0; left:0; right:0; z-index:160; height:54px; background:var(--surface); border-bottom:1px solid var(--border); padding:0 16px; align-items:center; justify-content:space-between; }
+    .mobile-brand { font-size:16px; font-weight:800; letter-spacing:-.5px; }
+    .mobile-brand .g { color:var(--accent); }
+    .ham-btn { background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; padding:6px; }
+    .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:149; }
+    .sidebar-overlay.show { display:block; }
+
+    /* ── SIDEBAR ── */
+    nav { width:var(--nav-w); background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; padding:20px 12px 16px; overflow-y:auto; z-index:150; transition:transform .28s ease; }
+    .nav-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding:0 4px 0 8px; }
+    .nav-brand { font-size:17px; font-weight:800; letter-spacing:-.5px; }
+    .nav-brand .g { color:var(--accent); }
+
+    /* bell */
+    .bell-wrap { position:relative; }
+    .bell-btn { background:none; border:none; color:var(--text2); font-size:17px; cursor:pointer; padding:5px; border-radius:7px; transition:background .2s; line-height:1; }
+    .bell-btn:hover { background:rgba(255,255,255,.07); color:#fff; }
+    .notif-badge { position:absolute; top:-3px; right:-3px; background:var(--danger); color:#fff; font-size:9px; font-weight:800; min-width:15px; height:15px; border-radius:10px; display:flex; align-items:center; justify-content:center; padding:0 3px; border:1.5px solid #000; }
+    .notif-badge.hidden { display:none; }
+
+    .nav-user { padding:10px; background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:10px; margin-bottom:18px; }
+    .nav-user-name { font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px; }
+    .role-badge { display:inline-block; font-size:10px; font-weight:700; padding:3px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:.5px; }
+    .badge-admin { background:rgba(76,175,80,.12); color:var(--accent); border:1px solid rgba(76,175,80,.25); }
+    .badge-colab { background:rgba(99,179,237,.1); color:#63b3ed; border:1px solid rgba(99,179,237,.22); }
+    .nav-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.2); padding:0 8px; margin:12px 0 4px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:13.5px; color:var(--text2); cursor:pointer; transition:all .15s; border:none; background:none; width:100%; text-align:left; font-family:inherit; }
+    .nav-item:hover { background:rgba(255,255,255,.05); color:#fff; }
+    .nav-item.active { background:rgba(76,175,80,.1); color:var(--accent); font-weight:600; }
+    .nav-spacer { flex:1; }
+    .btn-logout { display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border-radius:8px; background:none; border:1px solid rgba(255,255,255,.08); color:var(--text2); font-size:13px; font-family:inherit; cursor:pointer; transition:all .2s; }
+    .btn-logout:hover { background:rgba(248,81,73,.08); border-color:rgba(248,81,73,.3); color:#f85149; }
+
+    /* ── NOTIFICATION PANEL ── */
+    .notif-panel { position:fixed; top:0; right:-340px; width:320px; height:100vh; background:#111; border-left:1px solid var(--border); z-index:200; display:flex; flex-direction:column; transition:right .28s ease; }
+    .notif-panel.open { right:0; }
+    .notif-ph { display:flex; justify-content:space-between; align-items:center; padding:18px 16px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .notif-ph-title { font-size:14px; font-weight:700; }
+    .notif-ph-right { display:flex; align-items:center; gap:8px; }
+    .notif-read-btn { background:none; border:none; color:var(--text2); font-size:12px; cursor:pointer; }
+    .notif-read-btn:hover { color:#fff; }
+    .notif-close-btn { background:none; border:none; color:var(--text2); font-size:18px; cursor:pointer; padding:2px 5px; border-radius:5px; }
+    .notif-close-btn:hover { background:rgba(255,255,255,.07); color:#fff; }
+    .notif-list { flex:1; overflow-y:auto; padding:8px 0; }
+    .notif-empty { text-align:center; padding:48px 20px; color:rgba(255,255,255,.2); font-size:13px; }
+    .notif-item { display:flex; gap:12px; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.04); transition:background .15s; }
+    .notif-item.unread { background:rgba(255,255,255,.025); }
+    .notif-item:hover { background:rgba(255,255,255,.04); }
+    .notif-icon { width:32px; height:32px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:15px; }
+    .ni-danger  { background:rgba(248,81,73,.12); }
+    .ni-warning { background:rgba(226,183,74,.12); }
+    .ni-info    { background:rgba(63,185,80,.1); }
+    .notif-body { flex:1; min-width:0; }
+    .notif-msg  { font-size:13px; color:var(--text); line-height:1.4; }
+    .notif-time { font-size:11px; color:var(--muted); margin-top:3px; }
+    .notif-unread-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); margin-top:4px; flex-shrink:0; }
+
+    /* ── MAIN ── */
+    main { margin-left:var(--nav-w); padding:28px 32px; flex:1; min-height:100vh; }
+    .view { display:none; }
+    .view.active { display:block; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+    .page-title  { font-size:20px; font-weight:700; }
+    .page-date   { font-size:12.5px; color:var(--text2); }
+    .header-right { display:flex; align-items:center; gap:12px; }
+    .conn-badge { display:flex; align-items:center; gap:7px; padding:5px 12px; border-radius:100px; font-size:11.5px; font-weight:600; background:rgba(248,81,73,.08); border:1px solid rgba(248,81,73,.2); color:#f85149; }
+    .conn-badge.online { background:rgba(63,185,80,.08); border-color:rgba(63,185,80,.2); color:var(--success); }
+    .conn-dot { width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .conn-dot.pulse { animation:pulse 1.8s ease-in-out infinite; }
+
+    /* ── SECTION DIVIDER ── */
+    .sec-div { display:flex; align-items:center; gap:12px; margin:20px 0 12px; }
+    .sec-div-label { font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; }
+    .sec-div-line { flex:1; height:1px; background:var(--border); }
+    .sec-div-link { font-size:12px; color:var(--text2); background:none; border:none; cursor:pointer; font-family:inherit; text-decoration:underline; white-space:nowrap; }
+    .sec-div-link:hover { color:#fff; }
+
+    /* ── CARDS ── */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
+    .card-title { font-size:14px; font-weight:700; margin-bottom:14px; }
+
+    /* ── GRIDS ── */
+    .grid-5 { display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr 1fr; gap:13px; margin-bottom:13px; }
+    .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:13px; margin-bottom:13px; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:13px; }
+
+    /* ── METRIC CARDS ── */
+    .mode-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+    .mode-card .top-line { position:absolute; top:0; left:0; right:0; height:2.5px; background:var(--accent); }
+    .mode-lbl { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--text2); margin-bottom:10px; }
+    .mode-val { font-size:22px; font-weight:800; letter-spacing:-.5px; }
+    .mode-val.auto { color:var(--success); }
+    .mode-val.manual { color:var(--gold-light); }
+    .mode-sub { font-size:11.5px; color:var(--muted); margin-top:6px; }
+    .s-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 14px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; }
+    .s-card .top-line { position:absolute; top:0; left:0; right:0; height:2px; }
+    .s-key  { font-size:12px; font-weight:800; color:var(--text2); letter-spacing:.5px; margin-bottom:8px; }
+    .s-val  { font-size:26px; font-weight:700; color:var(--text); line-height:1; }
+    .s-unit { font-size:13px; font-weight:400; color:var(--muted); margin-left:3px; }
+    .s-desc { font-size:10.5px; color:var(--muted); margin-top:7px; }
+    .c-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; position:relative; overflow:hidden; }
+    .c-card .top-line { position:absolute; top:0; left:0; right:0; height:2px; }
+    .c-lbl  { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text2); margin-bottom:6px; }
+    .c-val  { font-size:20px; font-weight:700; color:var(--text); }
+    .c-unit { font-size:12px; color:var(--muted); margin-left:2px; }
+    .c-sub  { font-size:10.5px; color:var(--muted); margin-top:4px; }
+    .status-pill { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:100px; font-size:12px; font-weight:600; }
+    .pill-activo   { background:rgba(63,185,80,.1); color:var(--success); border:1px solid rgba(63,185,80,.2); }
+    .pill-detenido { background:rgba(248,81,73,.08); color:#f85149; border:1px solid rgba(248,81,73,.2); }
+    .pill-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    /* ── LDR COMPASS ── */
+    .ldr-grid { display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:auto auto auto; gap:8px; place-items:center; padding:4px 0 6px; }
+    .ldr-cell { background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:10px; padding:12px 18px; text-align:center; min-width:100px; }
+    .ldr-cell.active { border-color:rgba(76,175,80,.35); background:rgba(76,175,80,.06); }
+    .ldr-cell-label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text2); margin-bottom:5px; }
+    .ldr-cell-val { font-size:20px; font-weight:700; color:var(--text); }
+    .ldr-cell.active .ldr-cell-val { color:var(--accent); }
+    .ldr-center-cell { width:76px; height:76px; border-radius:50%; background:rgba(76,175,80,.07); border:1px solid rgba(76,175,80,.18); display:flex; align-items:center; justify-content:center; font-size:28px; }
+    .ldr-empty { visibility:hidden; }
+
+    /* ── MANZANA ── */
+    .camera-box { background:#0a0a0a; border:1px solid var(--border); border-radius:var(--radius); aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:12px; }
+    .camera-box img { width:100%; height:100%; object-fit:cover; display:none; }
+    .camera-placeholder { display:flex; flex-direction:column; align-items:center; gap:10px; color:rgba(255,255,255,.2); }
+    .camera-icon { font-size:42px; opacity:.3; }
+    .camera-txt  { font-size:12px; }
+    .last-det-row { display:flex; justify-content:space-between; align-items:center; }
+    .last-det-label { font-size:12px; color:var(--text2); }
+    .det-badge { padding:3px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+    .det-aceptada  { background:rgba(63,185,80,.12); color:var(--success); border:1px solid rgba(63,185,80,.2); }
+    .det-rechazada { background:rgba(248,81,73,.1); color:#f85149; border:1px solid rgba(248,81,73,.2); }
+    .det-inmadura  { background:rgba(226,183,74,.1); color:var(--gold-light); border:1px solid rgba(226,183,74,.2); }
+    .det-espera    { background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--border); }
+    .class-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid rgba(48,54,61,.4); }
+    .class-row:last-child { border-bottom:none; }
+    .class-row-label { display:flex; align-items:center; gap:8px; font-size:13px; }
+    .class-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .class-val { font-size:18px; font-weight:700; }
+    .servo-row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+    .servo-label { font-size:12px; color:var(--text2); }
+    .servo-badge { padding:4px 14px; border-radius:100px; font-size:12px; font-weight:700; }
+    .servo-idle   { background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--border); }
+    .servo-active { background:rgba(248,81,73,.1); color:#f85149; border:1px solid rgba(248,81,73,.25); }
+
+    /* ── CLASSIFICATION LOG ── */
+    .log-thumb { width:40px; height:40px; border-radius:5px; object-fit:cover; background:rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; font-size:16px; }
+
+    /* ── REPORTES ── */
+    .report-period { display:flex; gap:3px; background:var(--surface); padding:3px; border-radius:var(--radius); border:1px solid var(--border); }
+    .rp-btn { padding:7px 16px; border-radius:6px; font-size:12.5px; font-weight:500; cursor:pointer; border:none; background:none; color:var(--text2); font-family:inherit; transition:all .2s; }
+    .rp-btn.active { background:var(--accent); color:#fff; }
+    .chart-wrap { position:relative; height:220px; }
+
+    /* ── SETTINGS ── */
+    .settings-section { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; margin-bottom:14px; }
+    .section-head { display:flex; align-items:center; gap:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+    .section-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .section-title { font-size:14px; font-weight:700; color:var(--text); }
+    .section-sub   { font-size:12px; color:var(--text2); margin-top:2px; }
+    .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .fg { display:flex; flex-direction:column; gap:5px; }
+    .fg.full { grid-column:1/-1; }
+    .fg label { font-size:12px; font-weight:600; color:rgba(255,255,255,.45); }
+    .fg input,.fg select { width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:var(--radius); color:#fff; padding:10px 12px; font-size:13px; outline:none; font-family:inherit; transition:border-color .2s; }
+    .fg input:focus,.fg select:focus { border-color:rgba(76,175,80,.5); }
+    .fg input::placeholder { color:rgba(255,255,255,.2); }
+    .fg select option { background:#1a1a1a; }
+    .fg select { cursor:pointer; }
+    .req { color:var(--danger); }
+    .ssl-row { display:flex; align-items:center; gap:8px; margin-top:14px; }
+    .ssl-row input[type="checkbox"] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); }
+    .ssl-row label { font-size:13px; color:var(--text2); cursor:pointer; }
+    .section-footer { display:flex; justify-content:flex-end; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+    .settings-save { display:flex; justify-content:flex-end; margin-top:6px; }
+
+    /* ── BUTTONS ── */
+    .btn-add    { background:var(--accent); color:#fff; border:none; border-radius:var(--radius); padding:9px 18px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .2s; }
+    .btn-add:hover { opacity:.88; }
+    .btn-save   { background:var(--accent); color:#fff; border:none; border-radius:var(--radius); padding:11px 28px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .2s; }
+    .btn-save:hover { opacity:.88; }
+    .btn-cancel { background:transparent; border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); border-radius:var(--radius); padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .2s; }
+    .btn-cancel:hover { border-color:rgba(255,255,255,.25); color:rgba(255,255,255,.8); }
+    .btn-test   { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.7); border-radius:var(--radius); padding:9px 18px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .2s; }
+    .btn-test:hover { background:rgba(255,255,255,.1); color:#fff; }
+
+    /* ── TABLE ── */
+    table { width:100%; border-collapse:collapse; }
+    thead th { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; padding:0 12px 10px 0; text-align:left; border-bottom:1px solid var(--border); }
+    tbody td { padding:11px 12px 11px 0; font-size:13px; border-bottom:1px solid rgba(48,54,61,.35); vertical-align:middle; }
+    tbody tr:last-child td { border-bottom:none; }
+    .empty-state { text-align:center; padding:48px 20px; color:rgba(255,255,255,.2); }
+    .empty-state-icon { font-size:38px; margin-bottom:12px; opacity:.35; }
+    .empty-state-text { font-size:13px; }
+
+    /* ── MODAL ── */
+    .modal-overlay { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .modal-overlay.show { opacity:1; pointer-events:all; }
+    .modal-panel { background:#111; border:1px solid rgba(255,255,255,.1); border-radius:16px; width:560px; max-width:95vw; max-height:92vh; overflow-y:auto; transform:scale(.96) translateY(14px); transition:transform .25s; }
+    .modal-overlay.show .modal-panel { transform:scale(1) translateY(0); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 22px 16px; border-bottom:1px solid rgba(255,255,255,.08); position:sticky; top:0; background:#111; z-index:1; }
+    .modal-title { font-size:16px; font-weight:700; }
+    .modal-close { background:none; border:none; color:rgba(255,255,255,.4); font-size:20px; cursor:pointer; line-height:1; padding:2px 6px; border-radius:6px; }
+    .modal-close:hover { color:#fff; background:rgba(255,255,255,.07); }
+    .modal-body { padding:22px; }
+    .modal-footer { display:flex; justify-content:flex-end; gap:10px; padding:16px 22px 20px; border-top:1px solid rgba(255,255,255,.08); }
+    .pass-wrap-m { position:relative; }
+    .pass-wrap-m input { padding-right:42px; }
+    .pass-toggle-m { position:absolute; right:11px; top:50%; transform:translateY(-50%); background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:14px; }
+    .force-row { display:flex; align-items:center; gap:10px; margin-top:18px; padding:12px 14px; background:rgba(76,175,80,.05); border:1px solid rgba(76,175,80,.14); border-radius:var(--radius); }
+    .force-row input[type="checkbox"] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
+    .force-row label { font-size:13px; color:rgba(255,255,255,.65); cursor:pointer; line-height:1.4; }
+    .error-box { display:none; background:rgba(218,54,51,.08); border:1px solid rgba(218,54,51,.22); color:#ff7b72; padding:9px 13px; border-radius:var(--radius); font-size:12.5px; margin-top:14px; }
+    .error-box.show { display:block; }
+
+    /* ── ROLE ── */
+    [data-role="colaborador"] .admin-only { display:none !important; }
+    [data-role="colaborador"] input:not([type="checkbox"]),[data-role="colaborador"] select { pointer-events:none; border-color:rgba(255,255,255,.05); color:rgba(255,255,255,.4); background:rgba(255,255,255,.025); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      .mobile-header { display:flex; }
+      nav { transform:translateX(-100%); top:0; }
+      nav.open { transform:translateX(0); }
+      main { margin-left:0; padding:80px 16px 24px; }
+      .grid-5 { grid-template-columns:1fr 1fr; }
+      .grid-4 { grid-template-columns:1fr 1fr; }
+      .grid-2 { grid-template-columns:1fr; }
+      .notif-panel { width:100%; right:-100%; }
+      .notif-panel.open { right:0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MOBILE HEADER -->
+  <div class="mobile-header">
+    <button class="ham-btn" onclick="toggleSidebar()">&#9776;</button>
+    <div class="mobile-brand"><span class="g">INOVA</span>360°</div>
+    <div class="bell-wrap">
+      <button class="bell-btn" onclick="toggleNotifs()">&#128276;</button>
+      <span id="notif-badge-m" class="notif-badge hidden">0</span>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="nav-top">
+      <div class="nav-brand"><span class="g">INOVA</span>360°</div>
+      <div class="bell-wrap">
+        <button class="bell-btn" onclick="toggleNotifs()">&#128276;</button>
+        <span id="notif-badge" class="notif-badge hidden">0</span>
+      </div>
+    </div>
+
+    <div class="nav-user">
+      <div id="user-name" class="nav-user-name"></div>
+      <span id="role-badge" class="role-badge"></span>
+    </div>
+
+    <div class="nav-label">General</div>
+    <button class="nav-item active" onclick="navigate('inicio',this)"><span>&#x1F4CA;</span> Inicio</button>
+
+    <div class="nav-label">Monitoreo</div>
+    <button class="nav-item" onclick="navigate('solar',this)"><span>&#9728;&#xFE0F;</span> Panel Solar</button>
+    <button class="nav-item" onclick="navigate('manzana',this)"><span>&#127822;</span> Selecci&#xF3;n Manzana</button>
+
+    <div class="nav-label">Cuenta</div>
+    <button class="nav-item" onclick="navigate('ajustes',this)"><span>&#9881;&#xFE0F;</span> Ajustes</button>
+
+    <div class="nav-label">Gesti&#xF3;n</div>
+    <button class="nav-item" onclick="navigate('usuarios',this)"><span>&#128101;</span> Usuarios</button>
+    <button class="nav-item" onclick="navigate('reportes',this)"><span>&#128203;</span> Reportes</button>
+    <button class="nav-item admin-only" onclick="navigate('accesos',this)"><span>&#128273;</span> Accesos</button>
+
+    <div class="nav-spacer"></div>
+    <button class="btn-logout" onclick="location.href='inova360-app.html'"><span>&#8617;</span> Cerrar sesi&#xF3;n</button>
+  </nav>
+
+  <!-- NOTIFICATION PANEL -->
+  <div id="notif-panel" class="notif-panel">
+    <div class="notif-ph">
+      <div class="notif-ph-title">Notificaciones</div>
+      <div class="notif-ph-right">
+        <button class="notif-read-btn" onclick="markAllRead()">Marcar le&#xED;das</button>
+        <button class="notif-close-btn" onclick="toggleNotifs()">&#x2715;</button>
+      </div>
+    </div>
+    <div id="notif-list" class="notif-list">
+      <div class="notif-empty">Sin notificaciones</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- ══ INICIO ══ -->
+    <div id="view-inicio" class="view active">
+      <div class="page-header">
+        <div class="page-title">Inicio</div>
+        <div id="page-date" class="page-date"></div>
+      </div>
+      <div class="sec-div">
+        <span class="sec-div-label">&#9728;&#xFE0F; Panel Solar</span>
+        <div class="sec-div-line"></div>
+        <div id="solar-conn-i" class="conn-badge"><span class="conn-dot"></span> Sin conexi&#xF3;n</div>
+        <button class="sec-div-link" onclick="goTo('solar')">Ver detalle &#8594;</button>
+      </div>
+      <div class="grid-4">
+        <div class="c-card"><div class="top-line" id="si-mode-line" style="background:var(--border)"></div><div class="c-lbl">Modo</div><div id="si-modo" class="c-val" style="color:var(--muted)">—</div><div id="si-modo-sub" class="c-sub">Esperando datos</div></div>
+        <div class="c-card"><div class="top-line" style="background:var(--success)"></div><div class="c-lbl">Voltaje Panel</div><div class="c-val"><span id="si-vp">—</span><span class="c-unit" id="si-vp-u"></span></div><div class="c-sub">VP</div></div>
+        <div class="c-card"><div class="top-line" style="background:var(--gold-light)"></div><div class="c-lbl">Voltaje Bater&#xED;a</div><div class="c-val"><span id="si-vb">—</span><span class="c-unit" id="si-vb-u"></span></div><div class="c-sub">VB</div></div>
+        <div class="c-card"><div class="top-line" style="background:#63b3ed"></div><div class="c-lbl">Luz dominante</div><div id="si-ldr" class="c-val" style="color:#63b3ed">—</div><div class="c-sub">Fotorresistencia</div></div>
+      </div>
+      <div class="sec-div">
+        <span class="sec-div-label">&#127822; Selecci&#xF3;n Manzana</span>
+        <div class="sec-div-line"></div>
+        <div id="manz-conn-i" class="conn-badge"><span class="conn-dot"></span> Sin conexi&#xF3;n</div>
+        <button class="sec-div-link" onclick="goTo('manzana')">Ver detalle &#8594;</button>
+      </div>
+      <div class="grid-4">
+        <div class="c-card"><div class="top-line" style="background:var(--accent)"></div><div class="c-lbl">Estado sistema</div><div id="mi-estado" class="c-val" style="color:var(--muted)">—</div><div class="c-sub">Cinta transportadora</div></div>
+        <div class="c-card"><div class="top-line" style="background:#b48ead"></div><div class="c-lbl">Velocidad cinta</div><div class="c-val"><span id="mi-rpm">—</span><span class="c-unit" id="mi-rpm-u"></span></div><div class="c-sub">Encoder</div></div>
+        <div class="c-card"><div class="top-line" style="background:var(--text2)"></div><div class="c-lbl">Procesadas</div><div class="c-val"><span id="mi-total">—</span></div><div class="c-sub">Total acumulado</div></div>
+        <div class="c-card"><div class="top-line" style="background:var(--success)"></div><div class="c-lbl">Calidad</div><div class="c-val"><span id="mi-calidad">—</span><span class="c-unit" id="mi-calidad-u"></span></div><div class="c-sub">Aceptadas / Total</div></div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL SOLAR ══ -->
+    <div id="view-solar" class="view">
+      <div class="page-header">
+        <div class="page-title">Panel Solar</div>
+        <div class="header-right">
+          <div id="solar-conn" class="conn-badge"><span class="conn-dot"></span> Sin conexi&#xF3;n</div>
+          <div id="solar-date" class="page-date"></div>
+        </div>
+      </div>
+      <div class="grid-5">
+        <div class="mode-card"><div class="top-line" id="mode-line"></div><div class="mode-lbl">Modo de operaci&#xF3;n</div><div id="modo-val" class="mode-val">—</div><div class="mode-sub" id="modo-sub">Esperando datos...</div></div>
+        <div class="s-card"><div class="top-line" style="background:#63b3ed"></div><div class="s-key">DH</div><div class="s-val"><span id="dh-val">—</span><span class="s-unit" id="dh-u"></span></div><div class="s-desc">Posici&#xF3;n horizontal</div></div>
+        <div class="s-card"><div class="top-line" style="background:#b48ead"></div><div class="s-key">DV</div><div class="s-val"><span id="dv-val">—</span><span class="s-unit" id="dv-u"></span></div><div class="s-desc">Posici&#xF3;n vertical</div></div>
+        <div class="s-card"><div class="top-line" style="background:var(--success)"></div><div class="s-key">VP</div><div class="s-val"><span id="vp-val">—</span><span class="s-unit" id="vp-u"></span></div><div class="s-desc">Voltaje panel</div></div>
+        <div class="s-card"><div class="top-line" style="background:var(--gold-light)"></div><div class="s-key">VB</div><div class="s-val"><span id="vb-val">—</span><span class="s-unit" id="vb-u"></span></div><div class="s-desc">Voltaje bater&#xED;a</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fotorresistencias</div>
+        <div class="ldr-grid">
+          <div class="ldr-empty"></div>
+          <div class="ldr-cell" id="ldr-top"><div class="ldr-cell-label">Arriba</div><div class="ldr-cell-val" id="ldr-top-val">—</div></div>
+          <div class="ldr-empty"></div>
+          <div class="ldr-cell" id="ldr-left"><div class="ldr-cell-label">Izquierda</div><div class="ldr-cell-val" id="ldr-left-val">—</div></div>
+          <div class="ldr-center-cell">&#9728;&#xFE0F;</div>
+          <div class="ldr-cell" id="ldr-right"><div class="ldr-cell-label">Derecha</div><div class="ldr-cell-val" id="ldr-right-val">—</div></div>
+          <div class="ldr-empty"></div>
+          <div class="ldr-cell" id="ldr-bot"><div class="ldr-cell-label">Abajo</div><div class="ldr-cell-val" id="ldr-bot-val">—</div></div>
+          <div class="ldr-empty"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SELECCIÓN MANZANA ══ -->
+    <div id="view-manzana" class="view">
+      <div class="page-header">
+        <div class="page-title">Selecci&#xF3;n Manzana</div>
+        <div id="manz-conn" class="conn-badge"><span class="conn-dot"></span> Sin conexi&#xF3;n</div>
+      </div>
+      <div class="grid-4">
+        <div class="s-card"><div class="top-line" style="background:var(--accent)"></div><div class="s-key">CINTA</div><div style="margin-top:4px"><span id="m-estado" class="status-pill pill-detenido"><span class="pill-dot"></span>Detenida</span></div><div class="s-desc">Estado transportadora</div></div>
+        <div class="s-card"><div class="top-line" style="background:#b48ead"></div><div class="s-key">VELOCIDAD</div><div class="s-val"><span id="m-rpm">—</span><span class="s-unit" id="m-rpm-u"></span></div><div class="s-desc">Encoder (RPM)</div></div>
+        <div class="s-card"><div class="top-line" style="background:var(--text2)"></div><div class="s-key">PROCESADAS</div><div class="s-val"><span id="m-total">—</span></div><div class="s-desc">Total acumulado</div></div>
+        <div class="s-card"><div class="top-line" style="background:var(--success)"></div><div class="s-key">CALIDAD</div><div class="s-val"><span id="m-calidad">—</span><span class="s-unit" id="m-calidad-u"></span></div><div class="s-desc">Aceptadas / Total</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">C&#xE1;mara</div>
+          <div class="camera-box"><img id="cam-img" src="" alt="" /><div class="camera-placeholder" id="cam-placeholder"><div class="camera-icon">&#128247;</div><div class="camera-txt">Sin imagen — esperando conexi&#xF3;n</div></div></div>
+          <div class="last-det-row"><span class="last-det-label">&#xDA;ltima detecci&#xF3;n:</span><span id="last-det" class="det-badge det-espera">—</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Clasificaci&#xF3;n</div>
+          <div class="class-row"><div class="class-row-label"><div class="class-dot" style="background:var(--success)"></div>Aceptadas</div><div class="class-val" id="m-aceptadas" style="color:var(--success)">—</div></div>
+          <div class="class-row"><div class="class-row-label"><div class="class-dot" style="background:#f85149"></div>Rechazadas</div><div class="class-val" id="m-rechazadas" style="color:#f85149">—</div></div>
+          <div class="class-row"><div class="class-row-label"><div class="class-dot" style="background:var(--gold-light)"></div>Inmaduras</div><div class="class-val" id="m-inmaduras" style="color:var(--gold-light)">—</div></div>
+          <div class="servo-row"><span class="servo-label">Servo (rechazo):</span><span id="servo-badge" class="servo-badge servo-idle">En reposo</span></div>
+        </div>
+      </div>
+      <!-- Registro de clasificaciones -->
+      <div class="card">
+        <div class="card-title">Registro de clasificaciones</div>
+        <table>
+          <thead><tr><th>Hora</th><th>Resultado</th><th>Vista</th></tr></thead>
+          <tbody id="class-log-tbody">
+            <tr><td colspan="3"><div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">Sin registros a&#xFA;n</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ REPORTES ══ -->
+    <div id="view-reportes" class="view">
+      <div class="page-header">
+        <div class="page-title">Reportes</div>
+        <div class="report-period">
+          <button class="rp-btn active" onclick="setPeriod('hora',this)">&#xDA;lt. hora</button>
+          <button class="rp-btn" onclick="setPeriod('dia',this)">Hoy</button>
+          <button class="rp-btn" onclick="setPeriod('semana',this)">Semana</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Voltaje Panel Solar (VP / VB)</div>
+          <div class="chart-wrap"><canvas id="chart-solar"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Clasificaci&#xF3;n de manzanas</div>
+          <div class="chart-wrap"><canvas id="chart-manzana"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ AJUSTES ══ -->
+    <div id="view-ajustes" class="view">
+      <div class="page-header"><div class="page-title">Ajustes</div></div>
+      <div class="settings-section">
+        <div class="section-head"><div class="section-icon" style="background:rgba(62,207,142,.1)">&#x26A1;</div><div><div class="section-title">Supabase</div><div class="section-sub">Autenticaci&#xF3;n y base de datos principal</div></div></div>
+        <div class="settings-grid">
+          <div class="fg full"><label>URL del proyecto</label><input id="sb-url" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co" /></div>
+          <div class="fg full"><label>Anon Key (p&#xFA;blica)</label><input id="sb-anon" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." /></div>
+          <div class="fg full"><label>Service Role Key (privada — solo servidor)</label><input id="sb-service" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." /></div>
+        </div>
+        <div class="section-footer admin-only"><button class="btn-test" onclick="sbVerificar()">Verificar conexi&#xF3;n</button></div>
+      </div>
+      <div class="settings-section">
+        <div class="section-head"><div class="section-icon" style="background:rgba(255,255,255,.06)">&#x1F419;</div><div><div class="section-title">GitHub</div><div class="section-sub">Repositorio y control de versiones</div></div></div>
+        <div class="settings-grid">
+          <div class="fg full"><label>Token de acceso personal (PAT)</label><input type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" /></div>
+          <div class="fg"><label>Repositorio</label><input type="text" placeholder="usuario/repositorio" /></div>
+          <div class="fg"><label>Rama principal</label><input type="text" placeholder="main" /></div>
+        </div>
+        <div class="section-footer admin-only"><button class="btn-test">Verificar conexi&#xF3;n</button></div>
+      </div>
+      <div class="settings-section">
+        <div class="section-head"><div class="section-icon" style="background:rgba(255,255,255,.06)">&#x25B2;</div><div><div class="section-title">Vercel</div><div class="section-sub">Despliegue y hosting en la nube</div></div></div>
+        <div class="settings-grid">
+          <div class="fg full"><label>Token de API</label><input type="password" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" /></div>
+          <div class="fg"><label>ID del proyecto</label><input type="text" placeholder="prj_xxxxxxxxxxxx" /></div>
+          <div class="fg"><label>ID del equipo (opcional)</label><input type="text" placeholder="team_xxxxxxxxxxxx" /></div>
+          <div class="fg"><label>Entorno</label><select><option>production</option><option>preview</option><option>development</option></select></div>
+          <div class="fg"><label>URL del proyecto</label><input type="text" placeholder="https://mi-proyecto.vercel.app" /></div>
+        </div>
+        <div class="section-footer admin-only"><button class="btn-test">Verificar conexi&#xF3;n</button></div>
+      </div>
+      <div class="settings-save admin-only"><button class="btn-save" onclick="sbGuardar()">Guardar ajustes</button></div>
+    </div>
+
+    <!-- ══ USUARIOS ══ -->
+    <div id="view-usuarios" class="view">
+      <div class="page-header"><div class="page-title">Usuarios</div><button class="btn-add admin-only" onclick="openUserModal()">+ Agregar usuario</button></div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Nombre completo</th><th>RUT</th><th>Rol</th><th>Estado</th><th class="admin-only">Acciones</th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">&#x1F465;</div><div class="empty-state-text">No hay usuarios registrados a&#xFA;n</div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="view-reportes2" class="view"></div>
+    <div id="view-accesos" class="view admin-only"><div class="page-header"><div class="page-title">Accesos</div></div></div>
+  </main>
+
+  <!-- MODAL USUARIO -->
+  <div id="modal-usuario" class="modal-overlay" onclick="closeModalOutside(event)">
+    <div class="modal-panel">
+      <div class="modal-header"><div class="modal-title">Nuevo usuario</div><button class="modal-close" onclick="closeUserModal()">&#x2715;</button></div>
+      <div class="modal-body">
+        <div class="settings-grid">
+          <div class="fg"><label>Nombres <span class="req">*</span></label><input id="u-nombres" type="text" placeholder="Juan Carlos" /></div>
+          <div class="fg"><label>Apellido <span class="req">*</span></label><input id="u-apellido" type="text" placeholder="Gonz&#xE1;lez" /></div>
+          <div class="fg"><label>RUT <span class="req">*</span></label><input id="u-rut" type="text" placeholder="12.345.678-9" oninput="onRutModal(event)" /></div>
+          <div class="fg"><label>Rol <span class="req">*</span></label><select id="u-rol"><option value="colaborador">Colaborador</option><option value="admin">Administrador</option></select></div>
+          <div class="fg"><label>Correo electr&#xF3;nico</label><input id="u-correo" type="email" placeholder="ejemplo@correo.com" /></div>
+          <div class="fg"><label>Tel&#xE9;fono</label><input id="u-telefono" type="tel" placeholder="+56 9 1234 5678" /></div>
+          <div class="fg full"><label>Contrase&#xF1;a temporal <span class="req">*</span></label><div class="pass-wrap-m"><input id="u-pass" type="password" placeholder="M&#xED;nimo 8 caracteres" /><button class="pass-toggle-m" onclick="togglePassModal()">&#128065;</button></div></div>
+        </div>
+        <div class="force-row"><input type="checkbox" id="u-force" checked /><label for="u-force">Forzar cambio de contrase&#xF1;a en el primer acceso</label></div>
+        <div id="modal-err" class="error-box"></div>
+      </div>
+      <div class="modal-footer"><button class="btn-cancel" onclick="closeUserModal()">Cancelar</button><button class="btn-save" onclick="createUser()">Crear usuario</button></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    /* ── Init ── */
+    var p = new URLSearchParams(location.search);
+    var role   = p.get('role')   || 'colaborador';
+    var nombre = p.get('nombre') || '';
+    document.body.setAttribute('data-role', role);
+    var badge = document.getElementById('role-badge');
+    badge.textContent = role === 'admin' ? 'Administrador' : 'Colaborador';
+    badge.className   = 'role-badge ' + (role === 'admin' ? 'badge-admin' : 'badge-colab');
+    document.getElementById('user-name').textContent = nombre;
+    var dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    var hoy   = new Date();
+    var fechaTxt = dias[hoy.getDay()] + ', ' + hoy.getDate() + ' de ' + meses[hoy.getMonth()] + ' ' + hoy.getFullYear();
+    document.getElementById('page-date').textContent  = fechaTxt;
+    document.getElementById('solar-date').textContent = fechaTxt;
+
+    /* ── Navigation ── */
+    function navigate(view, btn) {
+      document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+      document.getElementById('view-' + view).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      closeSidebar();
+      if (view === 'reportes') initCharts();
+    }
+    function goTo(view) {
+      var btn = Array.from(document.querySelectorAll('.nav-item')).find(function(b){
+        return b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + view + "'");
+      });
+      if (btn) navigate(view, btn);
+    }
+
+    /* ── Mobile sidebar ── */
+    function toggleSidebar() {
+      var nav = document.getElementById('sidebar');
+      var ov  = document.getElementById('sidebar-overlay');
+      nav.classList.toggle('open');
+      ov.classList.toggle('show');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('show');
+    }
+
+    /* ── Notifications ── */
+    var notifications = [];
+    var notifCooldown = {};
+    var notifPanelOpen = false;
+
+    function addNotification(n) {
+      var coolKey = n.tipo || n.mensaje.substring(0,25);
+      var now = Date.now();
+      if (notifCooldown[coolKey] && now - notifCooldown[coolKey] < 60000) return;
+      notifCooldown[coolKey] = now;
+      var t = new Date();
+      var timeStr = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + ':' + t.getSeconds().toString().padStart(2,'0');
+      notifications.unshift({ nivel: n.nivel, mensaje: n.mensaje, hora: timeStr, leida: false });
+      renderNotifs();
+    }
+
+    function renderNotifs() {
+      var unread = notifications.filter(function(n){ return !n.leida; }).length;
+      var icons  = { danger:'&#x26A0;&#xFE0F;', warning:'&#x26A1;', info:'&#x2705;' };
+      var cls    = { danger:'ni-danger', warning:'ni-warning', info:'ni-info' };
+
+      ['notif-badge','notif-badge-m'].forEach(function(id){
+        var el = document.getElementById(id);
+        el.textContent = unread > 9 ? '9+' : unread;
+        el.classList.toggle('hidden', unread === 0);
+      });
+
+      var list = document.getElementById('notif-list');
+      if (!notifications.length) { list.innerHTML = '<div class="notif-empty">Sin notificaciones</div>'; return; }
+      list.innerHTML = notifications.map(function(n, i){
+        return '<div class="notif-item' + (n.leida ? '' : ' unread') + '" onclick="markRead(' + i + ')">' +
+          '<div class="notif-icon ' + (cls[n.nivel]||'ni-info') + '">' + (icons[n.nivel]||'&#x2139;') + '</div>' +
+          '<div class="notif-body"><div class="notif-msg">' + n.mensaje + '</div><div class="notif-time">' + n.hora + '</div></div>' +
+          (n.leida ? '' : '<div class="notif-unread-dot"></div>') +
+          '</div>';
+      }).join('');
+    }
+
+    function markRead(i) { notifications[i].leida = true; renderNotifs(); }
+    function markAllRead() { notifications.forEach(function(n){ n.leida = true; }); renderNotifs(); }
+
+    function toggleNotifs() {
+      var panel = document.getElementById('notif-panel');
+      panel.classList.toggle('open');
+    }
+
+    /* ── Charts ── */
+    var chartsInit = false;
+    var solarChart, manzChart;
+    var solarHistVP = [], solarHistVB = [], solarHistLabels = [];
+    var manzHistAcep = [], manzHistRech = [], manzHistLabels = [];
+    var currentPeriod = 'hora';
+
+    function initCharts() {
+      if (chartsInit) return;
+      chartsInit = true;
+      Chart.defaults.color = 'rgba(255,255,255,.4)';
+      Chart.defaults.borderColor = 'rgba(255,255,255,.07)';
+
+      var now = new Date();
+      for (var i = 23; i >= 0; i--) {
+        var d = new Date(now - i * 60 * 1000);
+        solarHistLabels.push(d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0'));
+        solarHistVP.push((17 + Math.random() * 3).toFixed(1));
+        solarHistVB.push((11.5 + Math.random() * 1.5).toFixed(1));
+      }
+      for (var j = 11; j >= 0; j--) {
+        var h = new Date(now - j * 3600 * 1000);
+        manzHistLabels.push(h.getHours().toString().padStart(2,'0') + ':00');
+        var ac = Math.floor(Math.random() * 30 + 10);
+        var re = Math.floor(Math.random() * 5);
+        manzHistAcep.push(ac);
+        manzHistRech.push(re);
+      }
+
+      solarChart = new Chart(document.getElementById('chart-solar'), {
+        type: 'line',
+        data: {
+          labels: solarHistLabels,
+          datasets: [
+            { label:'VP (V)', data: solarHistVP, borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.08)', tension:.4, pointRadius:0, borderWidth:2 },
+            { label:'VB (V)', data: solarHistVB, borderColor:'#e3b84a', backgroundColor:'rgba(227,184,74,.08)', tension:.4, pointRadius:0, borderWidth:2 }
+          ]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top', labels:{ boxWidth:12, padding:16 } } }, scales:{ x:{ ticks:{ maxTicksLimit:8, maxRotation:0 } }, y:{ min:0 } } }
+      });
+
+      manzChart = new Chart(document.getElementById('chart-manzana'), {
+        type: 'bar',
+        data: {
+          labels: manzHistLabels,
+          datasets: [
+            { label:'Aceptadas', data: manzHistAcep, backgroundColor:'rgba(63,185,80,.7)', borderRadius:3 },
+            { label:'Rechazadas', data: manzHistRech, backgroundColor:'rgba(248,81,73,.7)', borderRadius:3 }
+          ]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top', labels:{ boxWidth:12, padding:16 } } }, scales:{ x:{ stacked:false, ticks:{ maxTicksLimit:8, maxRotation:0 } }, y:{ min:0 } } }
+      });
+    }
+
+    function setPeriod(p, btn) {
+      document.querySelectorAll('.rp-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentPeriod = p;
+    }
+
+    /* ── Classification log ── */
+    var classLog = [];
+    var detClsMap = { aceptada:'det-aceptada', rechazada:'det-rechazada', inmadura:'det-inmadura' };
+
+    function addClassification(d) {
+      var now = new Date();
+      classLog.unshift({ hora: now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0'), resultado: d.resultado, imgUrl: d.imgUrl || '' });
+      if (classLog.length > 50) classLog.pop();
+      renderClassLog();
+    }
+
+    function renderClassLog() {
+      var tbody = document.getElementById('class-log-tbody');
+      if (!classLog.length) { tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">Sin registros a&#xFA;n</div></div></td></tr>'; return; }
+      tbody.innerHTML = classLog.map(function(r){
+        var thumb = r.imgUrl
+          ? '<img src="' + r.imgUrl + '" style="width:40px;height:40px;border-radius:5px;object-fit:cover">'
+          : '<div style="width:40px;height:40px;border-radius:5px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:18px">&#127822;</div>';
+        var res = r.resultado || '—';
+        var resCap = res.charAt(0).toUpperCase() + res.slice(1);
+        return '<tr><td style="color:var(--muted);font-family:monospace;font-size:12px">' + r.hora + '</td>' +
+               '<td><span class="det-badge ' + (detClsMap[r.resultado]||'det-espera') + '">' + resCap + '</span></td>' +
+               '<td>' + thumb + '</td></tr>';
+      }).join('');
+    }
+
+    /* ── Solar update ── */
+    function updateSolar(d) {
+      var isAuto = d.modo === 'AUTO' || d.modo === 'AUTOMÁTICO';
+      var modoTxt = isAuto ? 'AUTOMÁTICO' : 'MANUAL';
+      var modoBg  = isAuto ? 'var(--success)' : 'var(--gold-light)';
+      document.getElementById('modo-val').textContent = modoTxt;
+      document.getElementById('modo-val').className   = 'mode-val ' + (isAuto ? 'auto' : 'manual');
+      document.getElementById('mode-line').style.background = modoBg;
+      document.getElementById('modo-sub').textContent = isAuto ? 'Seguimiento solar activo' : 'Control manual activado';
+      document.getElementById('dh-val').textContent = d.dh; document.getElementById('dh-u').textContent = '°';
+      document.getElementById('dv-val').textContent = d.dv; document.getElementById('dv-u').textContent = '°';
+      document.getElementById('vp-val').textContent = d.vp; document.getElementById('vp-u').textContent = ' V';
+      document.getElementById('vb-val').textContent = d.vb; document.getElementById('vb-u').textContent = ' V';
+      var ldrMap = { top: d.ldrTop, bot: d.ldrBot, left: d.ldrLeft, right: d.ldrRight };
+      var ldrLabels = { top:'Arriba', bot:'Abajo', left:'Izquierda', right:'Derecha' };
+      var maxKey = Object.keys(ldrMap).reduce(function(a,b){ return ldrMap[a]>ldrMap[b]?a:b; });
+      ['top','bot','left','right'].forEach(function(k){
+        document.getElementById('ldr-'+k+'-val').textContent = ldrMap[k];
+        document.getElementById('ldr-'+k).classList.toggle('active', k===maxKey);
+      });
+      /* Inicio sync */
+      document.getElementById('si-modo').textContent = modoTxt;
+      document.getElementById('si-modo').style.color = isAuto ? 'var(--success)' : 'var(--gold-light)';
+      document.getElementById('si-mode-line').style.background = modoBg;
+      document.getElementById('si-modo-sub').textContent = isAuto ? 'Seguimiento activo' : 'Control manual';
+      document.getElementById('si-vp').textContent = d.vp; document.getElementById('si-vp-u').textContent = ' V';
+      document.getElementById('si-vb').textContent = d.vb; document.getElementById('si-vb-u').textContent = ' V';
+      document.getElementById('si-ldr').textContent = ldrLabels[maxKey];
+      setConn('solar-conn', true); setConn('solar-conn-i', true);
+      /* Push chart data */
+      if (chartsInit && solarChart) {
+        var now = new Date();
+        var lbl = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        solarHistVP.push(d.vp); solarHistVB.push(d.vb); solarHistLabels.push(lbl);
+        if (solarHistVP.length > 60) { solarHistVP.shift(); solarHistVB.shift(); solarHistLabels.shift(); }
+        solarChart.update('none');
+      }
+      /* Alerts */
+      if (parseFloat(d.vb) < 11.5) addNotification({ tipo:'vb-bajo', nivel:'danger',  mensaje:'Voltaje de batería bajo: ' + d.vb + ' V' });
+      if (parseFloat(d.vp) < 5)    addNotification({ tipo:'vp-bajo', nivel:'warning', mensaje:'Voltaje de panel bajo: ' + d.vp + ' V' });
+    }
+
+    /* ── Manzana update ── */
+    function updateManzana(d) {
+      var estadoEl = document.getElementById('m-estado');
+      estadoEl.className = 'status-pill ' + (d.activa ? 'pill-activo' : 'pill-detenido');
+      estadoEl.innerHTML = '<span class="pill-dot"></span>' + (d.activa ? 'Activa' : 'Detenida');
+      document.getElementById('m-rpm').textContent = d.rpm;   document.getElementById('m-rpm-u').textContent = ' RPM';
+      document.getElementById('m-total').textContent = d.total;
+      var pct = d.total > 0 ? Math.round(d.aceptadas / d.total * 100) : 0;
+      document.getElementById('m-calidad').textContent = pct;  document.getElementById('m-calidad-u').textContent = '%';
+      document.getElementById('m-aceptadas').textContent  = d.aceptadas;
+      document.getElementById('m-rechazadas').textContent = d.rechazadas;
+      document.getElementById('m-inmaduras').textContent  = d.inmaduras;
+      var detEl = document.getElementById('last-det');
+      var resCap = d.ultimaDet ? d.ultimaDet.charAt(0).toUpperCase() + d.ultimaDet.slice(1) : '—';
+      detEl.textContent = resCap;
+      detEl.className   = 'det-badge ' + (detClsMap[d.ultimaDet] || 'det-espera');
+      var sb = document.getElementById('servo-badge');
+      sb.textContent = d.servoActivo ? 'Activado' : 'En reposo';
+      sb.className   = 'servo-badge ' + (d.servoActivo ? 'servo-active' : 'servo-idle');
+      if (d.imgUrl) { document.getElementById('cam-img').src = d.imgUrl; document.getElementById('cam-img').style.display='block'; document.getElementById('cam-placeholder').style.display='none'; }
+      if (d.ultimaDet) addClassification({ resultado: d.ultimaDet, imgUrl: d.imgUrl });
+      /* Inicio sync */
+      document.getElementById('mi-estado').textContent = d.activa ? 'Activa' : 'Detenida';
+      document.getElementById('mi-estado').style.color = d.activa ? 'var(--success)' : '#f85149';
+      document.getElementById('mi-rpm').textContent = d.rpm;   document.getElementById('mi-rpm-u').textContent = ' RPM';
+      document.getElementById('mi-total').textContent = d.total;
+      document.getElementById('mi-calidad').textContent = pct; document.getElementById('mi-calidad-u').textContent = '%';
+      setConn('manz-conn', true); setConn('manz-conn-i', true);
+      /* Alerts */
+      if (pct < 80 && d.total > 10) addNotification({ tipo:'calidad-baja', nivel:'warning', mensaje: 'Calidad de manzanas bajo umbral: ' + pct + '%' });
+      if (d.servoActivo)             addNotification({ tipo:'servo-' + Date.now(), nivel:'info',    mensaje: 'Manzana rechazada: ' + (d.ultimaDet || 'detectada') });
+    }
+
+    function setConn(id, online) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('online', online);
+      el.innerHTML = '<span class="conn-dot' + (online?' pulse':'') + '"></span> ' + (online ? 'Conectado' : 'Sin conexión');
+    }
+
+    /* ── Modal usuario ── */
+    function openUserModal()  { document.getElementById('modal-usuario').classList.add('show'); setTimeout(function(){ document.getElementById('u-nombres').focus(); },50); }
+    function closeUserModal() {
+      document.getElementById('modal-usuario').classList.remove('show');
+      ['u-nombres','u-apellido','u-rut','u-correo','u-telefono','u-pass'].forEach(function(id){ document.getElementById(id).value=''; });
+      document.getElementById('u-rol').value='colaborador'; document.getElementById('u-force').checked=true;
+      document.getElementById('modal-err').classList.remove('show');
+    }
+    function closeModalOutside(e){ if(e.target===document.getElementById('modal-usuario')) closeUserModal(); }
+    function togglePassModal(){ var inp=document.getElementById('u-pass'); var h=inp.type==='password'; inp.type=h?'text':'password'; inp.nextElementSibling.innerHTML=h?'&#128584;':'&#128065;'; }
+    function formatRUT(val){ var c=val.replace(/[^0-9kK]/g,'').toUpperCase(); if(!c)return''; if(c.length===1)return c; var dv=c.slice(-1); var body=c.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); return body+'-'+dv; }
+    function onRutModal(e){ var pos=e.target.selectionStart,prev=e.target.value,fmt=formatRUT(prev); e.target.value=fmt; var diff=fmt.length-prev.length; e.target.setSelectionRange(pos+diff,pos+diff); }
+    function createUser(){
+      var errEl=document.getElementById('modal-err'); errEl.classList.remove('show');
+      var nombres=document.getElementById('u-nombres').value.trim();
+      var apellido=document.getElementById('u-apellido').value.trim();
+      var rut=document.getElementById('u-rut').value.trim();
+      var pass=document.getElementById('u-pass').value;
+      if(!nombres){errEl.textContent='Ingresa el nombre del usuario.';errEl.classList.add('show');return;}
+      if(!apellido){errEl.textContent='Ingresa el apellido del usuario.';errEl.classList.add('show');return;}
+      if(!rut){errEl.textContent='Ingresa el RUT del usuario.';errEl.classList.add('show');return;}
+      if(pass.length<8){errEl.textContent='La contraseña debe tener al menos 8 caracteres.';errEl.classList.add('show');return;}
+      /* TODO: supabase.auth.admin.createUser({...}) */
+      closeUserModal();
+    }
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeUserModal(); document.getElementById('notif-panel').classList.remove('open'); } });
+
+    /* ── Supabase ── */
+    var _sb = null;
+
+    function sbGuardar() {
+      var url = document.getElementById('sb-url').value.trim();
+      var key = document.getElementById('sb-anon').value.trim();
+      var svc = document.getElementById('sb-service').value.trim();
+      if (url) localStorage.setItem('sb_url', url);
+      if (key) localStorage.setItem('sb_anon', key);
+      if (svc) localStorage.setItem('sb_service', svc);
+      if (url && key) sbConectar(url, key);
+      else alert('Ingresa la URL y el Anon Key para conectar.');
+    }
+
+    function sbVerificar() {
+      var url = document.getElementById('sb-url').value.trim() || localStorage.getItem('sb_url');
+      var key = document.getElementById('sb-anon').value.trim() || localStorage.getItem('sb_anon');
+      if (!url || !key) { alert('Completa la URL y el Anon Key primero.'); return; }
+      sbConectar(url, key, true);
+    }
+
+    function sbConectar(url, key, verbose) {
+      try {
+        _sb = supabase.createClient(url, key);
+
+        /* Fetch inicial — carga datos actuales al conectar */
+        _sb.from('solar_live').select('*').eq('id', 1).single().then(function(r) {
+          if (r.data) sbMapSolar(r.data);
+        });
+        _sb.from('manzana_live').select('*').eq('id', 1).single().then(function(r) {
+          if (r.data) sbMapManzana(r.data);
+        });
+
+        /* Suscripción en tiempo real — solar */
+        _sb.channel('solar-ch')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'solar_live' }, function(p) {
+            if (p.new) sbMapSolar(p.new);
+          })
+          .subscribe(function(status) {
+            if (verbose && status === 'SUBSCRIBED') alert('Conexión a Supabase exitosa.');
+          });
+
+        /* Suscripción en tiempo real — manzana */
+        _sb.channel('manzana-ch')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'manzana_live' }, function(p) {
+            if (p.new) sbMapManzana(p.new);
+          })
+          .subscribe();
+
+      } catch(e) {
+        if (verbose) alert('Error al conectar: ' + e.message);
+        console.error('Supabase:', e);
+      }
+    }
+
+    function sbMapSolar(d) {
+      updateSolar({
+        modo:     d.modo,
+        dh:       d.pos_horizontal,
+        dv:       d.pos_vertical,
+        vp:       d.voltaje_panel,
+        vb:       d.voltaje_bateria,
+        ldrTop:   d.ldr_arriba,
+        ldrBot:   d.ldr_abajo,
+        ldrLeft:  d.ldr_izquierda,
+        ldrRight: d.ldr_derecha
+      });
+    }
+
+    function sbMapManzana(d) {
+      updateManzana({
+        activa:      d.activa,
+        rpm:         d.rpm,
+        total:       d.total,
+        aceptadas:   d.aceptadas,
+        rechazadas:  d.rechazadas,
+        inmaduras:   d.inmaduras,
+        ultimaDet:   d.ultima_det,
+        servoActivo: d.servo_activo,
+        imgUrl:      d.img_url || ''
+      });
+    }
+
+    /* Auto-conectar si hay credenciales guardadas */
+    (function() {
+      var url = localStorage.getItem('sb_url');
+      var key = localStorage.getItem('sb_anon');
+      var urlEl = document.getElementById('sb-url');
+      var keyEl = document.getElementById('sb-anon');
+      var svcEl = document.getElementById('sb-service');
+      if (urlEl && url) urlEl.value = url;
+      if (keyEl && key) keyEl.value = key;
+      if (svcEl) { var s = localStorage.getItem('sb_service'); if (s) svcEl.value = s; }
+      if (url && key) sbConectar(url, key);
+    })();
+  </script>
+</body>
+</html>
